@@ -1,10 +1,4 @@
-﻿// Decompiled with JetBrains decompiler
-// Type: Loader.Config
-// Assembly: Loader, Version=0.1.5611.35443, Culture=neutral, PublicKeyToken=null
-// MVID: 767D8978-23D8-4AB7-BA8A-78DBFB5F0780
-// Assembly location: E:\Downloads\ensage\Dumps\Loader_fix.exe
-
-using System;
+﻿using System;
 using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.Serialization;

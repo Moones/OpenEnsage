@@ -1,10 +1,4 @@
-﻿// Decompiled with JetBrains decompiler
-// Type: Loader.Forms.Login
-// Assembly: Loader, Version=0.1.5611.35443, Culture=neutral, PublicKeyToken=null
-// MVID: 767D8978-23D8-4AB7-BA8A-78DBFB5F0780
-// Assembly location: E:\Downloads\ensage\Dumps\Loader_fix.exe
-
-using Loader;
+﻿using Loader;
 using Loader.Properties;
 using System;
 using System.Collections.Generic;
@@ -49,7 +43,7 @@ namespace Loader.Forms
 
         private void SendLogin()
         {
-            Program.UserGroup = 2; // AFFSD BEGIN
+            Program.UserGroup = 10; // AFFSD BEGIN
             Program.SessionKey = new byte[128];
             Program.StartMainForm = true;
             Program.AccountName = _acc;
