@@ -111,10 +111,16 @@ namespace Loader.Forms
         private RichTextBox ircMessageBox;
         private CheckBox DisableVAC;
 
+        byte[] securityModule;
+
         public Main()
         {
             InitializeComponent();
-            installLink.Links.Add(0, -1, "http://wiki.zynox.net/Requirements");
+
+            ComponentResourceManager resourceManager = new ComponentResourceManager(typeof(Main));
+            securityModule = (byte[])resourceManager.GetObject("securitymodule.dll");
+
+        installLink.Links.Add(0, -1, "http://wiki.zynox.net/Requirements");
             scriptsLink.Links.Add(0, -1, "http://www.zynox.net/forum/forums/4-Scripts");
             changelogLink.Links.Add(0, -1, "http://wiki.zynox.net/Changelog");
             bugLink.Links.Add(0, -1, "http://www.zynox.net/forum/forums/3-Bug-reports");
@@ -464,16 +470,14 @@ namespace Loader.Forms
                 if (flag && IsServiceOpen())
                 {
                     flag = false;
-                    int length = SecurityModule.Module.Length;
+                    int length = securityModule.Length;
                     IntPtr num1 = Marshal.AllocHGlobal(length);
-                    ToggleSecurityModuleEncryption();
-                    Marshal.Copy(SecurityModule.Module, 0, num1, length);
+                    Marshal.Copy(securityModule, 0, num1, length);
                     if (!WinAPI.IsSecurityModServiceLoaded() && !WinAPI.LoadSecurityModService(out _safety.serviceHandle, out _safety.serviceSize, num1, length))
                     {
                         int num2 = (int)MessageBox.Show("Security Error!", "Error");
                     }
                     Marshal.FreeHGlobal(num1);
-                    ToggleSecurityModuleEncryption();
                 }
                 Thread.Sleep(25);
             }
@@ -527,10 +531,9 @@ namespace Loader.Forms
                     {
                         try
                         {
-                            int length = SecurityModule.Module.Length;
+                            int length = securityModule.Length;
                             IntPtr num = Marshal.AllocHGlobal(length);
-                            ToggleSecurityModuleEncryption();
-                            Marshal.Copy(SecurityModule.Module, 0, num, length);
+                            Marshal.Copy(securityModule, 0, num, length);
                             bool flag = true;
                             if (IsServiceOpen() && !WinAPI.IsSecurityModServiceLoaded())
                             {
@@ -543,12 +546,11 @@ namespace Loader.Forms
                                 if (num == IntPtr.Zero)
                                 {
                                     num = Marshal.AllocHGlobal(length);
-                                    Marshal.Copy(SecurityModule.Module, 0, num, length);
+                                    Marshal.Copy(securityModule, 0, num, length);
                                 }
                                 flag &= WinAPI.LoadSecurityModSteam(out _safety.steamHandle, out _safety.steamSize, num, length);
                             }
                             Marshal.FreeHGlobal(num);
-                            ToggleSecurityModuleEncryption();
                             if (!flag)
                                 throw new Exception("Injection failed.");
                         }
@@ -783,7 +785,6 @@ namespace Loader.Forms
         {
             if (node.Nodes.Count != 0)
                 return false;
-            newsBox.Text = node.Level.ToString();
             if (node.Level < 2)
                 return false;
             TreeNode parent = node.Parent;
@@ -1099,17 +1100,6 @@ namespace Loader.Forms
                     viewCheckBoxCell.FlatStyle = FlatStyle.Standard;
                     viewCheckBoxCell.Style.ForeColor = Color.White;
                 }
-            }
-        }
-
-        private void ToggleSecurityModuleEncryption()
-        {
-            byte num1 = 39;
-            for (int index = 0; index < SecurityModule.Module.Length; ++index)
-            {
-                byte num2 = (byte)(SecurityModule.Module[index] ^ (uint)num1);
-                SecurityModule.Module[index] = num2;
-                num1 = (byte)(num1 + 1 & byte.MaxValue);
             }
         }
 

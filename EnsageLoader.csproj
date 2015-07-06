@@ -55,7 +55,6 @@
     <Compile Include="Md5.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Repository.cs" />
-    <Compile Include="SecurityModule.cs" />
     <Compile Include="SharedRingBuffer.cs" />
     <Compile Include="WinAPI.cs" />
     <Compile Include="Forms\Login.cs">
@@ -86,6 +85,9 @@
     <EmbeddedResource Include="Images\okay.png" />
     <EmbeddedResource Include="Images\question.png" />
     <EmbeddedResource Include="Properties\Resources.resx" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ensage.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
