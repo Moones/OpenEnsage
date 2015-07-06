@@ -99,7 +99,7 @@ namespace Loader.Forms
         {
             try
             {
-                using (FileStream fileStream = System.IO.File.OpenRead("info.dat"))
+                using (FileStream fileStream = File.OpenRead("info.dat"))
                 {
                     BinaryReader binaryReader = new BinaryReader((Stream)fileStream);
                     while (binaryReader.BaseStream.Position < binaryReader.BaseStream.Length)
@@ -195,7 +195,7 @@ namespace Loader.Forms
             label_13:
             try
             {
-                using (FileStream fileStream = System.IO.File.Create("info.dat", 64, FileOptions.None))
+                using (FileStream fileStream = File.Create("info.dat", 64, FileOptions.None))
                 {
                     BinaryWriter binaryWriter = new BinaryWriter((Stream)fileStream);
                     if (this.checkBox1.Checked)

@@ -3,13 +3,12 @@ using Loader.Properties;
 using NetIrc2;
 using NetIrc2.Events;
 using System;
-using System.Collections;
+using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Security;
 using System.Reflection;
@@ -120,7 +119,7 @@ namespace Loader.Forms
             ComponentResourceManager resourceManager = new ComponentResourceManager(typeof(Main));
             securityModule = (byte[])resourceManager.GetObject("securitymodule.dll");
 
-        installLink.Links.Add(0, -1, "http://wiki.zynox.net/Requirements");
+            installLink.Links.Add(0, -1, "http://wiki.zynox.net/Requirements");
             scriptsLink.Links.Add(0, -1, "http://www.zynox.net/forum/forums/4-Scripts");
             changelogLink.Links.Add(0, -1, "http://wiki.zynox.net/Changelog");
             bugLink.Links.Add(0, -1, "http://www.zynox.net/forum/forums/3-Bug-reports");
@@ -203,19 +202,19 @@ namespace Loader.Forms
                 {
                     _config = new Config();
                 }
-                if (System.IO.File.Exists("script.list"))
+                if (File.Exists("script.list"))
                 {
                     try
                     {
                         List<LuaScript> list;
-                        using (FileStream fileStream = System.IO.File.Open("script.list", FileMode.Open))
+                        using (FileStream fileStream = File.Open("script.list", FileMode.Open))
                             list = (List<LuaScript>)new BinaryFormatter().Deserialize(fileStream);
                         foreach (object obj in list)
                             listBinding.Add(obj);
                     }
                     catch (Exception)
                     {
-                        System.IO.File.Delete("script.list");
+                        File.Delete("script.list");
                     }
                 }
                 WinAPI.EnableDebugPrivileges();
@@ -302,7 +301,7 @@ namespace Loader.Forms
                 _scriptConfigClass.Clear();
                 foreach (string category in Enumerable.Select<string, string>(Directory.GetFiles("Scripts\\Config\\", "*.txt"), new Func<string, string>(Path.GetFileNameWithoutExtension)))
                 {
-                    string[] strArray = System.IO.File.ReadAllLines(Path.Combine("Scripts\\Config\\", category + ".txt"));
+                    string[] strArray = File.ReadAllLines(Path.Combine("Scripts\\Config\\", category + ".txt"));
                     Regex regex = new Regex("([\\w|-]*)[\\W]*=[\\W]*([\\w|-]*)", RegexOptions.Compiled);
                     foreach (string input in strArray)
                     {
@@ -387,7 +386,7 @@ namespace Loader.Forms
                 }
                 while (Environment.TickCount - tickCount < 20000);
                 tickCount = Environment.TickCount;
-                
+
                 if (IsDotaOpen() && IsHackLoaded()) // AFFSD BEGIN
                 {
                     _sharedMemoryOut.Write("tick");
@@ -618,7 +617,7 @@ namespace Loader.Forms
             else
                 _sharedMemoryOut.Write("unload " + str + ".lua");
             List<LuaScript> list = Enumerable.ToList<LuaScript>(Enumerable.Cast<LuaScript>(listBinding));
-            using (FileStream fileStream = System.IO.File.Open("script.list", FileMode.Create))
+            using (FileStream fileStream = File.Open("script.list", FileMode.Create))
                 new BinaryFormatter().Serialize(fileStream, list);
         }
 
@@ -709,8 +708,8 @@ namespace Loader.Forms
             string[] directories = Directory.GetDirectories(target);
             foreach (string path in files)
             {
-                System.IO.File.SetAttributes(path, FileAttributes.Normal);
-                System.IO.File.Delete(path);
+                File.SetAttributes(path, FileAttributes.Normal);
+                File.Delete(path);
             }
             foreach (string target1 in directories)
                 DeleteDirectory(target1);
@@ -729,8 +728,8 @@ namespace Loader.Forms
                     string path = treeNode1.Text == "Libraries" ? Path.Combine("Scripts", "libs", treeNode2.Text) : Path.Combine("Scripts", treeNode2.Text);
                     try
                     {
-                        if (System.IO.File.Exists(path))
-                            System.IO.File.Delete(path);
+                        if (File.Exists(path))
+                            File.Delete(path);
                     }
                     catch (Exception)
                     {
@@ -793,7 +792,32 @@ namespace Loader.Forms
             TreeNode grandparent = parent.Parent;
             if (grandparent == null)
                 return false;
+            if (parent.Name != "Scripts" && parent.Name != "Libraries")
+                return false;
             return true;
+        }
+
+        private string[] GetDependencies(TreeNode node)
+        {
+            List<string> dependencies = new List<string>();
+            try
+            {
+                TreeNode parent = node.Parent, grandparent = parent.Parent;
+                string path = parent.Text == "Scripts" ? Path.Combine("Scripts", node.Text) : Path.Combine("Scripts", "libs", node.Text);
+                if (!File.Exists(path))
+                    return null;
+                IEnumerable<string> lines = File.ReadAllLines(path).Select((line) => line.Replace('"', '\'')).Where((line) => line.Contains("require('"));
+                foreach (string line in lines)
+                {
+                    int startIndex = line.IndexOf("require('") + "require('".Length;
+                    dependencies.Add(line.Substring(startIndex, line.Substring(startIndex).Replace('"', '\'').IndexOf('\'')));
+                }
+            }
+            catch (IOException)
+            {
+                return null;
+            }
+            return dependencies.ToArray();
         }
 
         private bool DeleteScript(TreeNode node)
@@ -804,9 +828,10 @@ namespace Loader.Forms
             {
                 TreeNode parent = node.Parent, grandparent = parent.Parent;
                 string path = parent.Text == "Scripts" ? Path.Combine("Scripts", node.Text) : Path.Combine("Scripts", "libs", node.Text);
-                if (!System.IO.File.Exists(path))
+                if (!File.Exists(path))
                     return false;
-                System.IO.File.Delete(path);
+                Debug.WriteLine("Delete script: " + node.Name);
+                File.Delete(path);
             }
             catch (Exception ex)
             {
@@ -814,6 +839,21 @@ namespace Loader.Forms
                 return false;
             }
             return true;
+        }
+
+        private void AddDependencies(TreeNode node)
+        {
+            IEnumerable<string> dependencies = GetDependencies(node).Where((dep) => dep.StartsWith("libs.")).Select((dep) => dep.Substring("libs.".Length) + ".lua");
+            foreach (string dep in dependencies)
+            {
+                IEnumerable<TreeNode> libs = repoScripts.Nodes.Find(dep, true).Where((lib) => lib.Parent.Name == "Libraries");
+                if (libs.Any() && !libs.First().Checked)
+                {
+                    repoScripts.AfterCheck += new TreeViewEventHandler(repoScripts_AfterCheck);
+                    libs.First().Checked = true;
+                    repoScripts.AfterCheck -= new TreeViewEventHandler(repoScripts_AfterCheck);
+                }
+            }
         }
 
         private bool AddScript(TreeNode node)
@@ -825,11 +865,13 @@ namespace Loader.Forms
                 TreeNode parent = node.Parent, grandparent = parent.Parent;
                 string destFileName = parent.Text == "Scripts" ? Path.Combine("Scripts", node.Text) : Path.Combine("Scripts", "libs", node.Text);
                 string str = Path.Combine(Path.Combine(_userPath, grandparent.Text), parent.Text == "Scripts" ? "Scripts" : "Libraries", node.Text);
-                if (!System.IO.File.Exists(str))
+                if (!File.Exists(str))
                     return false;
-                System.IO.File.Copy(str, destFileName, true);
+                File.Copy(str, destFileName, true);
+                Debug.WriteLine("Add script: " + node.Name);
+                AddDependencies(node);
             }
-            catch (System.IO.IOException)
+            catch (IOException)
             {
                 return false;
             }
@@ -884,12 +926,12 @@ namespace Loader.Forms
         {
             try
             {
-                if (System.IO.File.Exists("ensage.log"))
+                if (File.Exists("ensage.log"))
                 {
-                    string[] strArray = System.IO.File.ReadAllLines("ensage.log");
+                    string[] strArray = File.ReadAllLines("ensage.log");
                     int count = strArray.Length - 1000;
                     if (count > 0)
-                        System.IO.File.WriteAllLines("ensage.log", Enumerable.Skip<string>(strArray, count));
+                        File.WriteAllLines("ensage.log", Enumerable.Skip<string>(strArray, count));
                 }
             }
             catch (Exception)
@@ -970,7 +1012,7 @@ namespace Loader.Forms
                   str1,
                   str4
                                 });
-                                if (System.IO.File.Exists(path4))
+                                if (File.Exists(path4))
                                     loadWorker.ReportProgress(flag ? 7 : 8, new string[2]
                                     {
                     str1,
@@ -1091,7 +1133,7 @@ namespace Loader.Forms
                     if (!flag)
                         return;
                     List<LuaScript> list = Enumerable.ToList<LuaScript>(Enumerable.Cast<LuaScript>(listBinding));
-                    using (FileStream fileStream = System.IO.File.Open("script.list", FileMode.Create))
+                    using (FileStream fileStream = File.Open("script.list", FileMode.Create))
                         new BinaryFormatter().Serialize(fileStream, list);
                 }
                 else
@@ -1111,7 +1153,7 @@ namespace Loader.Forms
             try
             {
                 string path = Path.Combine("Scripts\\Config\\", label1 + ".txt");
-                string[] contents = System.IO.File.ReadAllLines(path);
+                string[] contents = File.ReadAllLines(path);
                 Regex regex = new Regex("([\\w|-]*)[\\W]*=[\\W]*([\\w|-]*)", RegexOptions.Compiled);
                 for (int index1 = 0; index1 < contents.Length; ++index1)
                 {
@@ -1130,7 +1172,7 @@ namespace Loader.Forms
                             {
                                 contents[index1] = contents[index1] + obj.ToString();
                             } // AFFSD END
-                            System.IO.File.WriteAllLines(path, contents);
+                            File.WriteAllLines(path, contents);
                             break;
                         }
                     }

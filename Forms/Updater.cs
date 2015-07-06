@@ -23,14 +23,14 @@ namespace Loader.Forms
         public Updater()
         {
             InitializeComponent();
-            if (!System.IO.File.Exists("LibGit2Sharp.dll") || !(FileVersionInfo.GetVersionInfo("LibGit2Sharp.dll").FileVersion != "0.18.1"))
+            if (!File.Exists("LibGit2Sharp.dll") || !(FileVersionInfo.GetVersionInfo("LibGit2Sharp.dll").FileVersion != "0.18.1"))
                 return;
-            System.IO.File.Delete("LibGit2Sharp.dll");
+            File.Delete("LibGit2Sharp.dll");
             foreach (string path in Directory.GetFiles(Directory.GetCurrentDirectory()))
             {
                 string fileName = Path.GetFileName(path);
                 if (fileName != null && fileName.StartsWith("git2-"))
-                    System.IO.File.Delete(path);
+                    File.Delete(path);
             }
         }
 
@@ -65,10 +65,10 @@ namespace Loader.Forms
 
         private void DecryptFile(string name)
         {
-            byte[] bytes = System.IO.File.ReadAllBytes(name);
+            byte[] bytes = File.ReadAllBytes(name);
             for (int index = 0; index < bytes.Length; ++index)
                 bytes[index] ^= 39;
-            System.IO.File.WriteAllBytes(name, bytes);
+            File.WriteAllBytes(name, bytes);
         }
 
         private void closeTimer_Tick(object sender, EventArgs e)
@@ -125,12 +125,12 @@ namespace Loader.Forms
                         }
                         try
                         {
-                            System.IO.File.Copy("ELoader.exe", "tmpl", true);
+                            File.Copy("ELoader.exe", "tmpl", true);
                             string hash = md5.GetHash("tmpl");
                             if (stringBuilder.Length > 0)
                                 stringBuilder.Append("&");
                             stringBuilder.Append("loader=" + hash);
-                            System.IO.File.Delete("tmpl");
+                            File.Delete("tmpl");
                         }
                         catch
                         {
@@ -147,7 +147,7 @@ namespace Loader.Forms
                         }
                         try
                         {
-                            if (System.IO.File.Exists("EnsageV2.dll"))
+                            if (File.Exists("EnsageV2.dll"))
                             {
                                 string hash = md5.GetHash("EnsageV2.dll");
                                 if (stringBuilder.Length > 0)
@@ -176,16 +176,16 @@ namespace Loader.Forms
                         {
                             webClient.CachePolicy = new RequestCachePolicy(RequestCacheLevel.NoCacheNoStore);
                             updateWorker.ReportProgress(30);
-                            if (!System.IO.File.Exists("git2-90befde.dll"))
+                            if (!File.Exists("git2-90befde.dll"))
                             {
                                 updateWorker.ReportProgress(31, "Downloading git libraries");
                                 webClient.DownloadFile("http://www.zynox.net/ensage/my_git", "git2-90befde.dll");
                             }
                             updateWorker.ReportProgress(40);
-                            if (!System.IO.File.Exists("LibGit2Sharp.dll"))
+                            if (!File.Exists("LibGit2Sharp.dll"))
                                 webClient.DownloadFile("http://www.zynox.net/ensage/my_gitsharp", "LibGit2Sharp.dll");
                             updateWorker.ReportProgress(50);
-                            if (!System.IO.File.Exists("NetIrc2.dll"))
+                            if (!File.Exists("NetIrc2.dll"))
                                 webClient.DownloadFile("http://www.zynox.net/ensage/my_netirc", "NetIrc2.dll");
                             updateWorker.ReportProgress(55);
                             byte[] numArray = CheckMD5Version(stringBuilder.ToString());
